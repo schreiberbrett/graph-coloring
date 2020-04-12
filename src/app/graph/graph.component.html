@@ -1,0 +1,82 @@
+<svg id="window"
+    (mousemove)="mousemoveSVG($event)"
+    (mouseup)="mouseupSVG($event)"
+>
+    <ng-container *ngFor="let edge of edges">
+        <line
+            stroke="black"
+            stroke-width="5"
+
+            [attr.x1]="vertices[edge[0]].x"
+            [attr.y1]="vertices[edge[0]].y"
+
+            [attr.x2]="vertices[edge[1]].x"
+            [attr.y2]="vertices[edge[1]].y"
+        ></line>
+    </ng-container>
+
+    <ng-container *ngFor="let vertex of vertices; let i = index">
+        <!-- Snappable area-->
+        <circle
+            class="snappable-area"
+            [attr.cx]="vertex.x"
+            [attr.cy]="vertex.y"
+            r="55"
+            fill="none"
+            (click)="clickSnappableArea()"
+            (mouseover)="mouseoverSnappableArea(i)"
+            (mouseleave)="mouseleaveSnappableArea($event)"
+        ></circle>
+
+
+        <circle
+            class="
+                (state.name === 'Hover' || state.name === 'Dragging') && state.vertexIndex === i
+                    ? (state.name === 'Hover' ? hovering : dragging)
+                    : neutral"
+            [attr.cx]="vertex.x"
+            [attr.cy]="vertex.y"
+            r="35"
+            [attr.fill]="vertex.color"
+            stroke="black"
+            stroke-width="5"
+            (mouseover)="mouseoverVertex(i)"
+            (mouseleave)="mouseleaveVertex($event)"
+            (mousedown)="mousedownVertex($event)"
+            (mouseup)="mouseupVertex()"
+            (mousemove)="mousemoveVertex($event)"
+            (dblclick)="dblclickVertex($event)"
+            (auxclick)="auxclickVertex($event)"
+            (contextmenu)="contextMenuVertex($event)"
+        ></circle>
+
+
+    </ng-container>
+
+    <line
+        class="preview-line"
+        *ngIf="state.name === 'MakingEdge'"
+        stroke="black"
+        stroke-width="5"
+
+        [attr.x1]="vertices[state.vertexIndex].x"
+        [attr.y1]="vertices[state.vertexIndex].y"
+
+        [attr.x2]="state.cursorX"
+        [attr.y2]="state.cursorY"
+    ></line>
+
+    <line
+        class="preview-line"
+        *ngIf="state.name === 'SnappedEdge'"
+        stroke="black"
+        stroke-width="5"
+
+        [attr.x1]="vertices[state.sourceVertexIndex].x"
+        [attr.y1]="vertices[state.sourceVertexIndex].y"
+
+
+        [attr.x2]="vertices[state.destinationVertexIndex].x"
+        [attr.y2]="vertices[state.destinationVertexIndex].y"
+    ></line>
+</svg>

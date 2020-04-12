@@ -1,0 +1,22 @@
+#window {
+    display: block;
+    border: 1px dotted black;
+    width: 99vw;
+    height: 99vh;
+}
+
+.hovering {
+    cursor: grab;
+}
+
+.dragging {
+    cursor: grabbing;
+}
+
+.snappable-area {
+    pointer-events: all;
+}
+
+.preview-line {
+    pointer-events: none;
+}
