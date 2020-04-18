@@ -116,8 +116,13 @@
               "devServerTarget": "graph-coloring:serve:production"
             }
           }
+        },
+        "deploy": {
+          "builder": "angular-cli-ghpages:deploy",
+          "options": {}
         }
       }
-    }},
+    }
+  },
   "defaultProject": "graph-coloring"
 }
