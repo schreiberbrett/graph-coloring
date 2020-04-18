@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { isochromacies, Isochromacy, allValidThreeColorings, Color } from '../../models'
+import { isochromacyReport, IsochromacyReport, Color } from '../../models'
 
 @Component({
   selector: 'app-graph',
@@ -7,11 +7,10 @@ import { isochromacies, Isochromacy, allValidThreeColorings, Color } from '../..
   styleUrls: ['./graph.component.css']
 })
 export class GraphComponent {
-  edges: [number, number][] = []
 
   vertices: Vertex[] = []
-
-  threeColorings: Color[][] = []
+  edges: [number, number][] = []
+  isochromacyReport: IsochromacyReport
 
   state: State = {name: 'Neutral'}
 
@@ -112,7 +111,7 @@ export class GraphComponent {
     }
   }
 
-  contextMenuVertex(event: MouseEvent) {
+  contextmenuVertex(event: MouseEvent) {
     event.preventDefault()
   }
 
@@ -140,6 +139,14 @@ export class GraphComponent {
     }
   }
 
+  auxclickSVG(event: MouseEvent) {
+    event.preventDefault()
+  }
+
+  contextmenuSVG(event: MouseEvent) {
+    event.preventDefault()
+  }
+
   startHovering(vertexIndex: number) {
     console.log("starthovering")
   
@@ -165,6 +172,8 @@ export class GraphComponent {
       y: cursorY,
       color: 'white'
     })
+
+    this.recomputeIsochromacyReport()
   }
 
   startDragging(state: Hover, event: MouseEvent) {
@@ -284,7 +293,7 @@ export class GraphComponent {
 
     this.edges.push([state.sourceVertexIndex, state.destinationVertexIndex])
 
-    this.updateColors()
+    this.recomputeIsochromacyReport()
 
     this.state = {
       name: 'Hover',
@@ -292,16 +301,28 @@ export class GraphComponent {
     }
   }
 
-  updateColors() {
-    const colorings: Color[][] = allValidThreeColorings(this.vertices.map((_, i) => i), this.edges)
+  recomputeIsochromacyReport() {
+    this.isochromacyReport = isochromacyReport(this.vertices.length, this.edges)
 
-    const result: Isochromacy[] = isochromacies(this.vertices.length, colorings)
+    this.vertices = this.vertices.map((vertex, index) => {
+      if (!this.isochromacyReport.isThreeColorable) {
+        return {
+          x: vertex.x,
+          y: vertex.y,
+          color: 'red'
+        }
+      }
 
-    this.vertices = this.vertices.map((vertex, index) => ({
-      x: vertex.x,
-      y: vertex.y,
-      color: colorForIsochromacy(result[index])
-    }))
+      const colors = ['blue', 'yellow', 'pink', 'orange', 'purple']
+
+      const result = this.isochromacyReport.isochromaticVertices.findIndex(group => group.includes(index))
+
+      return {
+        x: vertex.x,
+        y: vertex.y,
+        color: result === -1 ? 'white' : colors[result]
+      }
+    })
   }
 
   deleteHoveredVertex(state: Hover) {
@@ -314,6 +335,8 @@ export class GraphComponent {
       .map(([a, b]) => [(a > indexToRemove) ? a - 1 : a, (b > indexToRemove) ? b - 1 : b])
 
     this.vertices.splice(indexToRemove, 1)
+
+    this.recomputeIsochromacyReport()
 
     this.state = {
       name: 'Neutral'
@@ -369,17 +392,4 @@ type SnappedEdge = {
   name: 'SnappedEdge'
   sourceVertexIndex: number
   destinationVertexIndex: number
-}
-
-function colorForIsochromacy(isochromacy: Isochromacy): string {
-  switch (isochromacy.name) {
-    case 'Graph Not 3-Colorable':
-      return 'red'
-
-    case 'Independent Vertex':
-      return 'white'
-
-    case 'In Color Group':
-      return ['blue', 'green', 'yellow', 'purple'][isochromacy.group]
-  }
 }

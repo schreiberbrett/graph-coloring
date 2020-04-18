@@ -20,3 +20,7 @@
 .preview-line {
     pointer-events: none;
 }
+
+.edge {
+    cursor: pointer;
+}

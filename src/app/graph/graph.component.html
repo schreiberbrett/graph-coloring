@@ -1,9 +1,12 @@
 <svg id="window"
     (mousemove)="mousemoveSVG($event)"
     (mouseup)="mouseupSVG($event)"
+    (auxclick)="auxclickSVG($event)"
+    (contextmenu)="contextmenuSVG($event)"
 >
     <ng-container *ngFor="let edge of edges">
         <line
+            class="edge"
             stroke="black"
             stroke-width="5"
 
@@ -13,6 +16,22 @@
             [attr.x2]="vertices[edge[1]].x"
             [attr.y2]="vertices[edge[1]].y"
         ></line>
+    </ng-container>
+
+    <ng-container *ngIf="isochromacyReport.isThreeColorable">
+        <ng-container *ngFor="let edge of isochromacyReport.quasiEdges">
+            <line
+                stroke="black"
+                stroke-width="5"
+                stroke-dasharray="5"
+
+                [attr.x1]="vertices[edge[0]].x"
+                [attr.y1]="vertices[edge[0]].y"
+
+                [attr.x2]="vertices[edge[1]].x"
+                [attr.y2]="vertices[edge[1]].y"
+            ></line>
+        </ng-container>
     </ng-container>
 
     <ng-container *ngFor="let vertex of vertices; let i = index">
@@ -47,7 +66,7 @@
             (mousemove)="mousemoveVertex($event)"
             (dblclick)="dblclickVertex($event)"
             (auxclick)="auxclickVertex($event)"
-            (contextmenu)="contextMenuVertex($event)"
+            (contextmenu)="contextmenuVertex($event)"
         ></circle>
 
 

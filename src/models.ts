@@ -1,43 +1,57 @@
 export type Color = 'red' | 'green' | 'blue'
 
-export function allValidThreeColorings(vertices: number[], edges: [number, number][]): Color[][] {
-    return allThreeColorings(vertices.length).filter(coloring => !edges.some(([a, b]) => coloring[a] === coloring[b]))
-
-}
-
-export function allThreeColorings(numberOfVertices: number): Color[][] {
-    if (numberOfVertices === 0) {
-        return [[], [], []]
+export function allThreeColorings(vertices: number[], edges: [number, number][]): Color[][] {
+    if (vertices.length === 0) {
+        return []
     }
 
-    const colorings = allThreeColorings(numberOfVertices - 1)
+    if (vertices.length === 1) {
+        return [['red'], ['green'], ['blue']]
+    }
 
-    const redsInFront = colorings.map(coloring => ['red' as Color].concat(coloring))
-    const greensInFront = colorings.map(coloring => ['green' as Color].concat(coloring))
-    const bluesInFront = colorings.map(coloring => ['blue' as Color].concat(coloring))
+    const init = vertices.slice(0, vertices.length - 1)
+    const last = vertices[length - 1]
 
-    return [...redsInFront, ...greensInFront, ...bluesInFront]
+    const result = allThreeColorings(init, edges)
+
+    if (result.length === 0) return []
+
+    const withRed = result.map(x => x.concat('red'))
+    const withGreen = result.map(x => x.concat('blue'))
+    const withBlue = result.map(x => x.concat('green'))
+
+    const colorings = [...withRed, ...withGreen, ...withBlue]
+
+    return colorings.filter(coloring => edges.every(([a, b]) => !((coloring.length > a && coloring.length > b) && coloring[a] === coloring[b])))
 }
 
-export function isochromacies(numberOfVertices: number, colorings: Color[][]): Isochromacy[] {
+export function isochromacyReport(numberOfVertices: number, edges: [number, number][]): IsochromacyReport {
+    const colorings = allThreeColorings(range(numberOfVertices), edges)
+
     if (colorings.length === 0) {
-        return range(numberOfVertices).map(_ => ({name: 'Graph Not 3-Colorable'}))
+        return {isThreeColorable: false}
     }
 
-    let unions: number[][] = colorings.map((_, index) => [index])
+    let isochromaticVertices: number[][] = colorings.map((_, index) => [index])
+    let quasiEdges: [number, number][] = []
 
     for (let i = 0; i < numberOfVertices; i++) {
         for (let j = 0; j < i; j++) {
             if (colorings.every(coloring => coloring[i] === coloring[j])) {
-                unions = join(i, j, unions)
+                isochromaticVertices = join(i, j, isochromaticVertices)
+            }
+
+            if (colorings.every(coloring => coloring[i] !== coloring[j]) && !edges.includes([i, j]) && !edges.includes([j, i])) {
+                quasiEdges.push([i, j])
             }
         }
     }
 
-    return range(numberOfVertices).map(vertexNumber => {
-        const group = unions.findIndex(union => union.includes(vertexNumber))
-        return (unions[group].length === 1) ? {name: 'Independent Vertex'} : {name: 'In Color Group', group}
-    })
+    return {
+        isThreeColorable: true,
+        isochromaticVertices: isochromaticVertices.filter(group => group.length >= 2),
+        quasiEdges
+    }
 }
 
 function range(n: number): number[] {
@@ -57,12 +71,10 @@ function join(i: number, j: number, unions: number[][]): number[][] {
     return [result, ...unions.filter((_, index) => index !== iIndex && index !== jIndex)]
 }
 
-export type Isochromacy = {
-    name: 'In Color Group',
-    group: number
+export type IsochromacyReport = {
+    isThreeColorable: false
 } | {
-    name: 'Independent Vertex'
-} | {
-    name: 'Graph Not 3-Colorable'
+    isThreeColorable: true
+    isochromaticVertices: number[][]
+    quasiEdges: [number, number][]
 }
-
