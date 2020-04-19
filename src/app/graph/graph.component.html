@@ -1,3 +1,21 @@
+<ng-container *ngIf="qe7s.length > 0 || qe8s.length > 0 || diamonds.length > 0 || ocs.length > 0">
+    <div>Your graph contains a prime graph that is already known</div> 
+    <ul>
+        <li *ngFor="let x of qe7s">
+            {{x | json}}
+        </li>
+        <li *ngFor="let x of qe8s">
+            {{x | json}}
+        </li>
+        <li *ngFor="let x of diamonds">
+            {{x | json}}
+        </li>
+        <li *ngFor="let x of ocs">
+            {{x | json}}
+        </li>
+    </ul>
+</ng-container>
+
 <svg id="window"
     (mousemove)="mousemoveSVG($event)"
     (mouseup)="mouseupSVG($event)"
@@ -48,28 +66,40 @@
         ></circle>
 
 
-        <circle
-            class="
+        <g                (mouseover)="mouseoverVertex(i)"
+                (mouseleave)="mouseleaveVertex($event)"
+                (mousedown)="mousedownVertex($event)"
+                (mouseup)="mouseupVertex()"
+                (mousemove)="mousemoveVertex($event)"
+                (dblclick)="dblclickVertex($event)"
+                (auxclick)="auxclickVertex($event)"
+                (contextmenu)="contextmenuVertex($event)">
+            <circle
+                class="
+                    (state.name === 'Hover' || state.name === 'Dragging') && state.vertexIndex === i
+                        ? (state.name === 'Hover' ? hovering : dragging)
+                        : neutral"
+                [attr.cx]="vertex.x"
+                [attr.cy]="vertex.y"
+                r="35"
+                [attr.fill]="vertex.color"
+                stroke="black"
+                stroke-width="5"
+
+            ></circle>
+
+            <text
+                pointer-events="none"
+                class="
                 (state.name === 'Hover' || state.name === 'Dragging') && state.vertexIndex === i
                     ? (state.name === 'Hover' ? hovering : dragging)
                     : neutral"
-            [attr.cx]="vertex.x"
-            [attr.cy]="vertex.y"
-            r="35"
-            [attr.fill]="vertex.color"
-            stroke="black"
-            stroke-width="5"
-            (mouseover)="mouseoverVertex(i)"
-            (mouseleave)="mouseleaveVertex($event)"
-            (mousedown)="mousedownVertex($event)"
-            (mouseup)="mouseupVertex()"
-            (mousemove)="mousemoveVertex($event)"
-            (dblclick)="dblclickVertex($event)"
-            (auxclick)="auxclickVertex($event)"
-            (contextmenu)="contextmenuVertex($event)"
-        ></circle>
-
-
+                text-anchor="middle" 
+                stroke-width="1px" 
+                [attr.x]="vertex.x"
+                [attr.y]="vertex.y"
+            >{{i}}</text>
+        </g>
     </ng-container>
 
     <line

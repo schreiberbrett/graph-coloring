@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { isochromacyReport, IsochromacyReport, Color } from '../../models'
+import { isochromacyReport, IsochromacyReport, findDiamonds, Diamond, findQE7s, QE7, findQE8s, QE8, findOCs, OC} from '../../models'
 
 @Component({
   selector: 'app-graph',
@@ -10,10 +10,13 @@ export class GraphComponent {
 
   vertices: Vertex[] = []
   edges: [number, number][] = []
-  isochromacyReport: IsochromacyReport
+  isochromacyReport: IsochromacyReport = isochromacyReport(this.vertices.length, this.edges)
+  diamonds: Diamond[] = []
+  qe7s: QE7[] = []
+  qe8s: QE8[] = []
+  ocs: OC[] = []
 
   state: State = {name: 'Neutral'}
-
 
   mouseoverSnappableArea(vertexIndex: number) {
     switch (this.state.name) {
@@ -147,18 +150,14 @@ export class GraphComponent {
     event.preventDefault()
   }
 
-  startHovering(vertexIndex: number) {
-    console.log("starthovering")
-  
+  startHovering(vertexIndex: number) {  
     this.state = {
       name: 'Hover',
       vertexIndex: vertexIndex
     }
   }
   
-  unhover() {
-    console.log('unhover')
-  
+  unhover() {  
     this.state = {
       name: 'Neutral'
     }
@@ -177,8 +176,6 @@ export class GraphComponent {
   }
 
   startDragging(state: Hover, event: MouseEvent) {
-    console.log('startdragging')
-
     const {cursorX, cursorY} = cursorPosition(event)
     this.state = {
       name: 'Dragging',
@@ -189,8 +186,6 @@ export class GraphComponent {
   }
 
   continueDragging(state: Dragging, event: MouseEvent) {
-    console.log('continuedragging')
-
     const {cursorX, cursorY} = cursorPosition(event)
     const vertex = this.vertices[state.vertexIndex]
     vertex.x = cursorX
@@ -205,8 +200,6 @@ export class GraphComponent {
   }
 
   stopDragging(state: Dragging) {
-    console.log('stopdragging')
-
     this.state = {
       name: 'Hover',
       vertexIndex: state.vertexIndex
@@ -216,8 +209,6 @@ export class GraphComponent {
   /* MakingEdge */
 
   startMakingEdge(state: Hover) {
-    console.log('startmakingedge')
-
     const vertex: Vertex = this.vertices[state.vertexIndex]
     
     this.state = {
@@ -230,8 +221,6 @@ export class GraphComponent {
   
 
   continueMakingEdge(state: MakingEdge, event: MouseEvent) {
-    console.log('continuemakingedge')
-
     const {cursorX, cursorY} = cursorPosition(event)
 
     this.state = {
@@ -243,8 +232,6 @@ export class GraphComponent {
   }
 
   cancelEdgeToHover(state: MakingEdge) {
-    console.log('canceledgetohover')
-
     this.state = {
       name: 'Hover',
       vertexIndex: state.vertexIndex
@@ -252,8 +239,6 @@ export class GraphComponent {
   }
 
   stopMakingEdge(state: MakingEdge) {
-    console.log('stop making edge')
-
     this.state = {
       name: 'Neutral'
     }
@@ -276,8 +261,6 @@ export class GraphComponent {
   }
 
   unsnap(state: SnappedEdge, event: MouseEvent) {
-    console.log('unsnap')
-
     const {cursorX, cursorY} = cursorPosition(event)
 
     this.state = {
@@ -289,8 +272,6 @@ export class GraphComponent {
   }
 
   makeEdge(state: SnappedEdge) {
-    console.log('make edge')
-
     this.edges.push([state.sourceVertexIndex, state.destinationVertexIndex])
 
     this.recomputeIsochromacyReport()
@@ -302,6 +283,10 @@ export class GraphComponent {
   }
 
   recomputeIsochromacyReport() {
+    this.diamonds = findDiamonds(this.vertices.length, this.edges)
+    this.qe7s = findQE7s(this.vertices.length, this.edges)
+    this.qe8s = findQE8s(this.vertices.length, this.edges)
+    this.ocs = findOCs(this.vertices.length, this.edges)
     this.isochromacyReport = isochromacyReport(this.vertices.length, this.edges)
 
     this.vertices = this.vertices.map((vertex, index) => {
@@ -326,8 +311,6 @@ export class GraphComponent {
   }
 
   deleteHoveredVertex(state: Hover) {
-    console.log('delete vertex')
-
     const indexToRemove = state.vertexIndex
 
     this.edges = this.edges
