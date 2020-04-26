@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { isochromacyReport, IsochromacyReport, findDiamonds, Diamond, findQE7s, QE7, findQE8s, QE8, findOCs, OC} from '../../models'
+import { isochromacyReport, IsochromacyReport } from '../../models'
 
 @Component({
   selector: 'app-graph',
@@ -8,13 +8,11 @@ import { isochromacyReport, IsochromacyReport, findDiamonds, Diamond, findQE7s, 
 })
 export class GraphComponent {
 
+  currentColoring: number = 0
+
   vertices: Vertex[] = []
   edges: [number, number][] = []
   isochromacyReport: IsochromacyReport = isochromacyReport(this.vertices.length, this.edges)
-  diamonds: Diamond[] = []
-  qe7s: QE7[] = []
-  qe8s: QE8[] = []
-  ocs: OC[] = []
 
   state: State = {name: 'Neutral'}
 
@@ -169,7 +167,7 @@ export class GraphComponent {
     this.vertices.push({
       x: cursorX,
       y: cursorY,
-      color: 'white'
+      color: 'black'
     })
 
     this.recomputeIsochromacyReport()
@@ -283,29 +281,28 @@ export class GraphComponent {
   }
 
   recomputeIsochromacyReport() {
-    this.diamonds = findDiamonds(this.vertices.length, this.edges)
-    this.qe7s = findQE7s(this.vertices.length, this.edges)
-    this.qe8s = findQE8s(this.vertices.length, this.edges)
-    this.ocs = findOCs(this.vertices.length, this.edges)
     this.isochromacyReport = isochromacyReport(this.vertices.length, this.edges)
+
+    this.currentColoring = this.isochromacyReport.isThreeColorable ? 1 : 0
 
     this.vertices = this.vertices.map((vertex, index) => {
       if (!this.isochromacyReport.isThreeColorable) {
+
         return {
           x: vertex.x,
           y: vertex.y,
-          color: 'red'
+          color: 'black'
         }
       }
 
-      const colors = ['blue', 'yellow', 'pink', 'orange', 'purple']
+      const colors = ['yellow', 'skyblue', 'purple', 'lawngreen']
 
       const result = this.isochromacyReport.isochromaticVertices.findIndex(group => group.includes(index))
 
       return {
         x: vertex.x,
         y: vertex.y,
-        color: result === -1 ? 'white' : colors[result]
+        color: result === -1 ? 'black' : colors[result]
       }
     })
   }

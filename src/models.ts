@@ -26,22 +26,23 @@ export function allThreeColorings(vertices: number[], edges: [number, number][])
 }
 
 export function isochromacyReport(numberOfVertices: number, edges: [number, number][]): IsochromacyReport {
-    const colorings = allThreeColorings(range(numberOfVertices), edges)
+    const threeColorings = allThreeColorings(range(numberOfVertices), edges)
+    const primes = findPrimes(numberOfVertices, edges)
 
-    if (colorings.length === 0) {
-        return {isThreeColorable: false}
+    if (threeColorings.length === 0) {
+        return {isThreeColorable: false, primes}
     }
 
-    let isochromaticVertices: number[][] = colorings.map((_, index) => [index])
+    let isochromaticVertices: number[][] = threeColorings.map((_, index) => [index])
     let quasiEdges: [number, number][] = []
 
     for (let i = 0; i < numberOfVertices; i++) {
         for (let j = 0; j < i; j++) {
-            if (colorings.every(coloring => coloring[i] === coloring[j])) {
+            if (threeColorings.every(coloring => coloring[i] === coloring[j])) {
                 isochromaticVertices = join(i, j, isochromaticVertices)
             }
 
-            if (colorings.every(coloring => coloring[i] !== coloring[j] && !hasEdge(edges, i, j))) {
+            if (threeColorings.every(coloring => coloring[i] !== coloring[j] && !hasEdge(edges, i, j))) {
                 quasiEdges.push([i, j])
             }
         }
@@ -49,8 +50,10 @@ export function isochromacyReport(numberOfVertices: number, edges: [number, numb
 
     return {
         isThreeColorable: true,
+        primes,
         isochromaticVertices: isochromaticVertices.filter(group => group.length >= 2),
-        quasiEdges
+        quasiEdges,
+        threeColorings
     }
 }
 
@@ -73,13 +76,55 @@ function join(i: number, j: number, unions: number[][]): number[][] {
 
 export type IsochromacyReport = {
     isThreeColorable: false
+    primes: Prime[]
 } | {
     isThreeColorable: true
+    primes: Prime[]
     isochromaticVertices: number[][]
     quasiEdges: [number, number][]
+    threeColorings: Color[][]
 }
 
-export type Diamond = {
+export function simplify(numberOfVertices: number, edges: [number, number][]): [number, number][] {
+    console.log('got in here')
+
+    const report: IsochromacyReport = isochromacyReport(numberOfVertices, edges)
+
+    if (report.isThreeColorable === false) {
+        return []
+    }
+
+    let result: [number, number][] = []
+
+    for (let i = 0; i < edges.length; i++) {
+        const withOneEdgeRemoved = [...edges.slice(0, i), ...edges.slice(i + 1, edges.length)]
+        const newReport = isochromacyReport(numberOfVertices, withOneEdgeRemoved)
+
+        if (
+            newReport.isThreeColorable === true &&
+            newReport.isochromaticVertices.length === report.isochromaticVertices.length &&
+            newReport.quasiEdges.length === report.quasiEdges.length
+        ) {
+            result.push(edges[i])
+        }
+    }
+
+    return result
+}
+
+export type Prime = Diamond | QE8 | HC3n2 | OCC2n3 | Courtney
+
+function findPrimes(numberOfVertices: number, edges: [number, number][]): Prime[] {
+    return [
+        ...findDiamonds(numberOfVertices, edges),
+        ...findQE8s(numberOfVertices, edges),
+        ...findOCs(numberOfVertices, edges),
+        ...findOCCPs(numberOfVertices, edges),
+        ...findCourtneys(numberOfVertices, edges)
+    ]
+}
+
+type Diamond = {
     name: 'Diamond'
     top: number
     left: number
@@ -87,18 +132,7 @@ export type Diamond = {
     bottom: number
 }
 
-export type QE7 = {
-    name: 'QE7'
-    outerTop: number
-    outerLeft: number
-    outerMiddle: number
-    outerRight: number
-    innerTop: number
-    innerLeft: number
-    innerRight: number
-}
-
-export type QE8 = {
+type QE8 = {
     name: 'QE8'
     outerTop: number,
     leftTop: number,
@@ -110,24 +144,48 @@ export type QE8 = {
     outerBottom: number
 }
 
-export type OC = {
-    name: 'OC'
+type HC3n2 = {
+    name: 'HC3n2'
     hornPath: number[]
     endpointConnector: number
     hornConnector: number
 }
 
-export type Cycle = {
+type OCC2n3 = {
+    name: 'OCC2n3',
+    first: number,
+    second: number,
+    oddCycle: number[]
+}
+
+type Courtney = {
+    name: 'Courtney',
+    outer: number,
+    
+    topLeft: number,
+    topMiddle: number
+    topRight: number
+
+    middleLeft: number
+    middleMiddle: number
+    middleRight: number
+
+    bottomLeft: number
+    bottomMiddle: number
+    bottomRight: number
+}
+
+type Cycle = {
     name: 'Cycle'
     vertices: number[]
 }
 
-export type Path = {
+type Path = {
     name: 'Path'
     vertices: number[]
 }
 
-export function findDiamonds(numberOfVertices: number, edges: [number, number][]): Diamond[] {
+function findDiamonds(numberOfVertices: number, edges: [number, number][]): Diamond[] {
     let result: Diamond[] = []
 
     for (let i = 0; i < edges.length; i++) {
@@ -157,18 +215,7 @@ export function findDiamonds(numberOfVertices: number, edges: [number, number][]
     return result
 }
 
-export function findQE7s(numberOfVertices: number, edges: [number, number][]): QE7[] {
-    return findCycles(7, numberOfVertices, edges)
-        .map(cycle => cycle.vertices)
-        .filter(([outerTop, innerTop, innerRight, innerLeft, outerLeft, outerMiddle, outerRight]) =>
-            hasEdge(edges, outerTop, outerLeft) &&
-            hasEdge(edges, innerTop, innerLeft) &&
-            hasEdge(edges, outerRight, innerRight))
-        .map(([outerTop, innerTop, innerRight, innerLeft, outerLeft, outerMiddle, outerRight]) =>
-            ({name: 'QE7', outerTop, innerTop, innerRight, innerLeft, outerLeft, outerMiddle, outerRight}))
-}
-
-export function findQE8s(numberOfVertices: number, edges: [number, number][]): QE8[] {
+function findQE8s(numberOfVertices: number, edges: [number, number][]): QE8[] {
     return findCycles(8, numberOfVertices, edges)
         .map(cycle => cycle.vertices)
         .filter(([outerTop, leftTop, leftMiddle, leftBottom, outerBottom, rightBottom, rightMiddle, rightTop]) => 
@@ -180,31 +227,67 @@ export function findQE8s(numberOfVertices: number, edges: [number, number][]): Q
             ({name: 'QE8', outerTop, leftTop, leftMiddle, leftBottom, outerBottom, rightBottom, rightMiddle, rightTop}))
 }
 
-export function findOCs(numberOfVertices: number, edges: [number, number][]): OC[] {
-    let result: OC[] = []
+function findOCs(numberOfVertices: number, edges: [number, number][]): HC3n2[] {
+    let result: HC3n2[] = []
 
-    for (let i = 7; i < numberOfVertices; i += 3) {
-        const cycles = findCycles(i, numberOfVertices, edges).map(cycles => cycles.vertices).filter(vertices => {
-            const [_, ...rest] = vertices
+    const cycles: number[][] = flatMap(
+        range(numberOfVertices)
+            .map(n => (3 * n) + 1)
+            .filter(n => n < numberOfVertices),
+        n => findCycles(n, numberOfVertices, edges).map(cycle => cycle.vertices)
+    )
 
-            return range(rest.length / 3)
-                .map(n => [3 * n, 3 * n + 2]) // [0, 2], [3, 5], [6, 8]...
-                .every(([a, b]) => hasEdge(edges, rest[a], rest[b]))
-        })
+    const eligibleCycles = cycles.filter(([first, ...rest]) => range(rest.length)
+        .map(n => 3 * n + 1)
+        .filter(n => n < rest.length)
+        .map(n => [n - 1, n + 1])
+        .every(([i, j]) => hasEdge(edges, rest[i], rest[j]))
+    )
 
-        for (let j = 0; j < cycles.length; j++) {
-            for (let k = 0; k < numberOfVertices; k++) {
-                const [first, ...rest] = cycles[j]
+    for (let i = 0; i < numberOfVertices; i++) {
+        for (let j = 0; j < eligibleCycles.length; j++) {
+            const cycle = eligibleCycles[j]
+            const [first, ...rest] = cycle
+            if (!cycle.includes(i) && range(rest.length)
+                .map(n => 3 * n + 1)
+                .filter(n => n < rest.length)
+                .every(k => hasEdge(edges, rest[k], i))
+            ) {
+                result.push({
+                    name: 'HC3n2',
+                    endpointConnector: first,
+                    hornPath: rest,
+                    hornConnector: i
+                })
+            }
+        }
+    }
+
+    return result
+}
+
+function findOCCPs(numberOfVertices: number, edges: [number, number][]): OCC2n3[] {
+    let result: OCC2n3[] = []
+    
+    const oddCycles = findAllOddCycles(numberOfVertices, edges).map(x => x.vertices)
+
+    for (let i = 0; i < numberOfVertices; i++) {
+        for (let j = 0; j < i; j++) {
+            for (let k = 0; k < oddCycles.length; k++) {
+                const oddCycle = oddCycles[k]
 
                 if (
-                    !cycles[j].includes(k) &&
-                    range(rest.length / 3).map(n => (3 * n) + 1).every(vertex => hasEdge(edges, k, vertex))
+                    !oddCycle.includes(i) &&
+                    !oddCycle.includes(j) &&
+                    oddCycle.some(vertex => hasEdge(edges, i, vertex)) &&
+                    oddCycle.some(vertex => hasEdge(edges, j, vertex)) &&
+                    oddCycle.every(vertex => hasEdge(edges, i, vertex) || hasEdge(edges, j, vertex))
                 ) {
                     result.push({
-                        name: 'OC',
-                        endpointConnector: first,
-                        hornConnector: k,
-                        hornPath: rest
+                        name: 'OCC2n3',
+                        first: i,
+                        second: j,
+                        oddCycle: oddCycle
                     })
                 }
             }
@@ -214,13 +297,38 @@ export function findOCs(numberOfVertices: number, edges: [number, number][]): OC
     return result
 }
 
-export function findCycles(cycleLength: number, numberOfVertices: number, edges: [number, number][]): Cycle[] {
+function findCourtneys(numberOfVertices: number, edges: [number, number][]): Courtney[] {
+    return findCycles(10, numberOfVertices, edges)
+        .map(cycles => cycles.vertices)
+        .filter(([outer, bottomLeft, bottomMiddle, bottomRight, middleRight, middleMiddle, middleLeft, topLeft, topMiddle, topRight]) => 
+            hasEdge(edges, bottomLeft, bottomRight) &&
+            hasEdge(edges, bottomLeft, middleLeft) &&
+            hasEdge(edges, bottomMiddle, middleMiddle) &&
+            hasEdge(edges, middleMiddle, topMiddle) &&
+            hasEdge(edges, middleRight, topRight) &&
+            hasEdge(edges, outer, topLeft))
+        .map(([outer, bottomLeft, bottomMiddle, bottomRight, middleRight, middleMiddle, middleLeft, topLeft, topMiddle, topRight]) => ({
+            name: 'Courtney',
+            outer, bottomLeft, bottomMiddle, bottomRight, middleRight, middleMiddle, middleLeft, topLeft, topMiddle, topRight
+        }))
+}
+
+function findAllOddCycles(numberOfVertices: number, edges: [number, number][]): Cycle[] {
+    return flatMap(
+        range(numberOfVertices)
+            .map(n => (2 * n) + 3)
+            .filter(n => n <= numberOfVertices),
+        n => findCycles(n, numberOfVertices, edges)
+    )
+}
+
+function findCycles(cycleLength: number, numberOfVertices: number, edges: [number, number][]): Cycle[] {
     return findPaths(cycleLength, numberOfVertices, edges)
         .filter(path => hasEdge(edges, path.vertices[0], path.vertices[cycleLength - 1]))
         .map(path => ({name: 'Cycle', vertices: path.vertices}))
 }
 
-export function findPaths(pathLength: number, numberOfVertices: number, edges: [number, number][]): Path[] {
+function findPaths(pathLength: number, numberOfVertices: number, edges: [number, number][]): Path[] {
     return flatMap(range(numberOfVertices), vertex => helper([], vertex))
 
     function helper(pathSoFar: number[], lastInPath: number): Path[] {
